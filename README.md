@@ -59,6 +59,27 @@ Gem::Specification.new do |spec|
 end
 ```
 
+## Including Runtime Gem Dependencies
+
+Halite can include any runtime gem dependencies that may by included in your
+`.gemspec` and add them to the written `metadata.rb` file as a `gem` dependency.
+To enable this feature, define the `halite_use_gem_dependencies` metadata
+field in your `.gemspec`. Note that this feature locks your cookbook into at
+least Chef 12.8.1, which will also be written to `metadata.rb`
+(`halite_chef_version` overrides the written version if it is defined,
+however).
+
+```ruby
+Gem::Specification.new do |spec|
+  spec.metadata['halite_use_gem_dependencies'] = 'true'
+  ...
+  spec.add_dependency 'foo', '~> 1.2'
+end
+```
+
+This functionality also ignores the `halite` gem as it is generally not needed
+in the written cookbook.
+
 ## Rake Tasks
 
 The `halite/rake_tasks` module provides quick defaults. Gem name will be

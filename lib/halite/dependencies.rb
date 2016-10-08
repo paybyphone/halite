@@ -39,12 +39,17 @@ module Halite
       end
     end
 
-    def self.extract(spec)
+    def self.extract_cookbooks(spec)
       deps = []
       deps += clean_and_tag(extract_from_requirements(spec), :requirements)
       deps += clean_and_tag(extract_from_metadata(spec), :metadata)
-      deps += clean_and_tag(extract_from_dependencies(spec), :dependencies)
+      deps += clean_and_tag(extract_cookbooks_from_dependencies(spec), :dependencies)
       deps
+    end
+    
+    # Extract gems 
+    def self.extract_gems(spec)
+      clean_and_tag(extract_gems_from_dependencies(spec), :dependencies)
     end
 
     def self.extract_from_requirements(spec)
@@ -58,13 +63,28 @@ module Halite
       spec.metadata.fetch('halite_dependencies', '').split(/,/)
     end
 
-    def self.extract_from_dependencies(spec)
+    def self.extract_cookbooks_from_dependencies(spec)
       # Find any gem dependencies that are cookbooks in disguise.
       spec.dependencies.select do |dep|
         dep.type == :runtime && Gem.new(dep).is_halite_cookbook?
       end.map do |dep|
         gem = Gem.new(dep)
         [gem.cookbook_name] + dep.requirements_list + [gem.spec]
+      end
+    end
+
+    # Find any gem dependencies that are what they say on the tin.
+    #
+    # This feature is only enabled if halite_write_gem_deps is defined to a
+    # non-nil value in metadata. If it is not, this function returns an empty
+    # set.
+    def self.extract_gems_from_dependencies(spec)
+      return [] if spec.metadata.fetch('halite_use_gem_dependencies', nil).nil?
+      spec.dependencies.select do |dep|
+        dep.type == :runtime && !Gem.new(dep).is_halite_cookbook? && !Gem.new(dep).is_halite_gem?
+      end.map do |dep|
+        gem = Gem.new(dep)
+        [gem.name] + dep.requirements_list + [gem.spec]
       end
     end
 
